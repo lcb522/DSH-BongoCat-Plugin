@@ -6,7 +6,8 @@ English | [中文](README.zh.md)
 
 ## Features
 
-- **Thump animation**: every keyboard input inside the page (including combos like Ctrl+C, arrow keys) and left clicks press/release the paw
+- **Full cat scene**: a happy white cat (ears, blush, whiskers) lying over a keyboard, two independent paws slapping with a head bob
+- **Left/right split**: left-half keys (QWERT/ASDFG/ZXCVB/1-5) slap the left paw, right-half keys the right paw; **space and left clicks slam both**
 - **Keycap bubbles**: pressed keys pop as keycaps that fade out, up to 7 at once; breathing animation disabled automatically for `prefers-reduced-motion` users
 - **Privacy first**: password fields and token/secret-looking inputs **always show •••**, never the real key; bubbles can also be turned off entirely
 - **Placement**: bottom-left / bottom-right, 50%–180% scale
