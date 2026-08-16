@@ -2,17 +2,16 @@
 
 English | [中文](README.zh.md)
 
-**Bongo Paw**: a typing companion pet for the DeepSeek Harness web surface. A cat paw sits in a corner of the UI and thumps along with your keystrokes, popping keycap bubbles — inspired by [BongoCat](https://github.com/ayangweb/BongoCat) (MIT), rewritten from scratch for the browser.
+**Bongo Paw (Live2D edition)**: the **original BongoCat Live2D keyboard model** ([desktop BongoCat](https://github.com/ayangweb/BongoCat), MIT) brought into the DeepSeek Harness web surface — the same cat on the same keyboard, paws slapping along with your typing, with automatic blinking and breathing.
 
 ## Features
 
-- **Full cat scene**: a happy white cat (ears, blush, whiskers) lying over a keyboard, two independent paws slapping with a head bob
-- **Left/right split**: left-half keys (QWERT/ASDFG/ZXCVB/1-5) slap the left paw, right-half keys the right paw; **space and left clicks slam both**
-- **Keycap bubbles**: pressed keys pop as keycaps that fade out, up to 7 at once; breathing animation disabled automatically for `prefers-reduced-motion` users
-- **Privacy first**: password fields and token/secret-looking inputs **always show •••**, never the real key; bubbles can also be turned off entirely
-- **Placement**: bottom-left / bottom-right, 50%–180% scale
-- **Zero interference**: `pointer-events: none` — the paw never blocks a click
-- One switch: off removes every DOM node and listener, no residue
+- **The real Live2D model**: embeds the keyboard model from BongoCat v1.1.0 (moc3 + official textures), rendered by Cubism Core + pixi.js + pixi-live2d-display — fully self-contained, zero network requests
+- **The original drive chain**: identical to the desktop app — keystrokes write the model parameters `CatParamLeftHandDown` / `CatParamRightHandDown`; left-half keys slap the left paw, right-half keys the right paw, space/click slams both
+- **Alive details**: automatic eye blink and breathing (built into the model, not canned animation)
+- **Keycap bubbles**: pressed keys pop as keycaps that fade out (up to 7); password/token inputs **always show •••**; bubbles can be disabled entirely
+- **Placement**: bottom-left / bottom-right, 50%–180% scale; `pointer-events: none` never blocks a click
+- One switch: off destroys the model and its WebGL context, no residue
 
 ## Install (Windows)
 

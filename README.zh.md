@@ -2,17 +2,16 @@
 
 [English](README.md) | 中文
 
-**猫爪桌宠**：DeepSeek Harness 网页端的打字陪伴桌宠。在界面角落放一只猫爪，你打字时它跟着拍击，气泡显示按下的键——灵感来自 [BongoCat](https://github.com/ayangweb/BongoCat)（MIT），为浏览器环境从零重写。
+**猫爪桌宠（Live2D 版）**：把 [BongoCat 桌面版](https://github.com/ayangweb/BongoCat)（MIT）的**原版 Live2D 键盘模型**搬进 DeepSeek Harness 网页——同一只猫、同一块键盘，打字时左右爪跟着拍，眼睛自动眨、身体自动呼吸。
 
 ## 特性
 
-- **完整小猫场景**：闭眼笑小白猫（耳朵/腮红/胡须）趴在键盘上，左右双爪独立拍击、头部联动轻点
-- **左右爪分区**：按左手区的键（QWERT/ASDFG/ZXCVB/1-5）左爪拍，右手区的键右爪拍，**空格和鼠标左键双爪齐拍**
-- **按键气泡**：按下的键以键帽气泡形式弹出并渐隐，最多同时 7 个；`prefers-reduced-motion` 用户自动停用呼吸动画
-- **隐私优先**：密码框、token/密钥类输入框**始终显示 •••**，不显示真实键名；也可完全关闭气泡只留动画
-- **自由摆放**：左下/右下角切换，50%–180% 缩放
-- **零打扰**：`pointer-events: none`——猫爪完全不可点击、不挡任何操作
-- 一键开关：关闭即完全移除，不残留任何 DOM 与监听器
+- **原版 Live2D 模型**：内嵌 BongoCat v1.1.0 的 keyboard 模型（moc3 + 官方贴图），Cubism Core + pixi.js + pixi-live2d-display 渲染，全部自包含、零外网请求
+- **原版驱动链**：与桌面版相同——按键写入模型参数 `CatParamLeftHandDown` / `CatParamRightHandDown`，左手区键拍左爪、右手区键拍右爪、空格/鼠标左键双爪齐拍
+- **活体细节**：自动眨眼、呼吸起伏（模型自带，非预制动画）
+- **按键气泡**：按下的键以键帽气泡弹出渐隐（最多 7 个）；密码/token 输入框**始终显示 •••**，也可整体关闭气泡
+- **自由摆放**：左下/右下角，50%–180% 缩放；`pointer-events: none` 不挡任何操作
+- 一键开关：关闭即销毁模型与 WebGL 上下文，无残留
 
 ## 安装（Windows）
 
