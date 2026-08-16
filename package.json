@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-client-ui-bongocat",
   "description": "Bongo Paw: a typing companion pet for the Web surface — the paw thumps along with your keystrokes, with keycap bubbles (password fields masked)",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "publishConfig": {
     "access": "public"
   },

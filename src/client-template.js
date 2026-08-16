@@ -1,12 +1,14 @@
 /**
- * Bongo Paw client bundle — Live2D edition template.
+ * Bongo Paw client bundle — the REAL classic scene, template edition.
  *
- * Renders the REAL BongoCat keyboard Live2D model (MIT, ayangweb/BongoCat)
- * inside the DSH web surface, driven by page keyboard events through the
- * model's own paw parameters (CatParamLeftHandDown / CatParamRightHandDown).
+ * Renders the original BongoCat standard Live2D model (MIT, ayangweb/BongoCat):
+ * the white cat behind its desk, mouse pad on the left, QWERTY keyboard on the
+ * right — with the desktop app's signature effect: the pressed key's image
+ * lights up on the keyboard while the paws slap.
  *
- * Build: scripts/build-client.mjs substitutes the placeholders below with the
- * vendored runtime sources and base64 model files, producing lib/client.js.
+ * The vendored runtimes (Cubism Core, pixi.js, pixi-live2d-display) execute as
+ * REAL code inside this factory — no script injection, no eval, no network.
+ * Build: scripts/build-client.mjs substitutes the placeholders below.
  */
 window.__ModuleLoader__.load({
 	id: "@deepseek-ai/dsh-client-ui-bongocat",
@@ -18,15 +20,27 @@ window.__ModuleLoader__.load({
 		let react_jsx_runtime = require("react/jsx-runtime");
 		let react = require("react");
 		let _deepseek_ai_dsh_client_runtime_client = require("@deepseek-ai/dsh-client-runtime/client");
+		//#region vendor/live2dcubismcore.min.js (shadowed module/exports so the Emscripten UMD cannot hijack this factory's module.exports)
+		var Live2DCubismCore = (function (module, exports, define, require) {
+			__LIB_CORE__
+			return typeof Live2DCubismCore !== "undefined" ? Live2DCubismCore : window.Live2DCubismCore;
+		}).call(window, undefined, undefined, undefined, undefined);
+		window.Live2DCubismCore = Live2DCubismCore;
+		//#endregion
+		//#region vendor/pixi.min.js (plain IIFE; declares var PIXI)
+		__LIB_PIXI__
+		window.PIXI = PIXI;
+		//#endregion
+		//#region vendor/l2d.min.js (UMD forced down the global branch: window.PIXI.live2d)
+		(function (module, exports, require, define) {
+			__LIB_L2D__
+		}).call(window, undefined, undefined, undefined, undefined);
+		//#endregion
 		//#region src/client/embedded.ts
-		/** Vendored runtime sources (injected in dependency order). */
-		const LIB_CORE = ["__LIB_CORE__"][0];
-		const LIB_PIXI = ["__LIB_PIXI__"][0];
-		const LIB_L2D = ["__LIB_L2D__"][0];
-		/** Model files keyed by their path relative to the model root. */
+		/** Model files keyed by their path relative to the model root (base64 data URLs). */
 		const MODEL_FILES = __MODEL_FILES__;
 		/** Virtual origin every embedded model URL resolves against. */
-		const VIRTUAL_BASE = "https://bongo.local/keyboard/";
+		const VIRTUAL_BASE = "https://bongo.local/standard/";
 		/** Map a virtual model URL to its embedded data URL, or undefined. */
 		function mapUrl(url) {
 			if (typeof url !== "string") return void 0;
@@ -36,25 +50,7 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region src/client/runtime-hooks.ts
-		/** Inject the three runtime scripts once (synchronous execution order). */
-		function ensureRuntimeLibs() {
-			const seq = [
-				["bongocat-lib-core", LIB_CORE],
-				["bongocat-lib-pixi", LIB_PIXI],
-				["bongocat-lib-l2d", LIB_L2D],
-			];
-			for (const [id, code] of seq) {
-				if (document.getElementById(id) === null) {
-					const tag = document.createElement("script");
-					tag.id = id;
-					tag.dataset.plugin = "@deepseek-ai/dsh-client-ui-bongocat";
-					tag.textContent = code;
-					document.head.appendChild(tag);
-				}
-			}
-			return typeof window.Live2DCubismCore !== "undefined" && typeof window.PIXI === "object" && window.PIXI !== null && window.PIXI.live2d !== void 0;
-		}
-		/** Route every loader channel (XHR / fetch / Image) for the virtual origin. */
+		/** Route the loader channels (XHR / Image) for the virtual origin only. */
 		function installLoaderHooks() {
 			if (window.__bongoLoaderHooked) return;
 			window.__bongoLoaderHooked = true;
@@ -62,49 +58,55 @@ window.__ModuleLoader__.load({
 			function PatchedXHR() {
 				const xhr = new OrigXHR();
 				const origOpen = xhr.open;
-				xhr.open = function (method, url, ...rest) {
+				xhr.open = function (method, url) {
 					const mapped = mapUrl(String(url));
-					return origOpen.call(this, method, mapped === void 0 ? url : mapped, ...rest);
+					arguments[1] = mapped === void 0 ? url : mapped;
+					return origOpen.apply(this, arguments);
 				};
 				return xhr;
 			}
 			PatchedXHR.prototype = OrigXHR.prototype;
 			window.XMLHttpRequest = PatchedXHR;
-			const origFetch = window.fetch;
-			if (typeof origFetch === "function") {
-				window.fetch = function (input, init) {
-					try {
-						const url = typeof input === "string" ? input : input instanceof Request ? input.url : String(input);
-						const mapped = mapUrl(url);
-						if (mapped !== void 0) return origFetch.call(this, mapped, init);
-					} catch { /* fallthrough */ }
-					return origFetch.apply(this, arguments);
-				};
-			}
-			const OrigImage = window.Image;
-			const desc = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, "src");
+			const desc = typeof HTMLImageElement !== "undefined" ? Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, "src") : void 0;
 			if (desc !== void 0) {
-				function PatchedImage(w, h) {
-					const img = arguments.length === 2 ? new OrigImage(w, h) : arguments.length === 1 ? new OrigImage(w) : new OrigImage();
-					Object.defineProperty(img, "src", {
-						get() {
-							return desc.get.call(this);
-						},
-						set(value) {
-							const mapped = mapUrl(String(value));
-							desc.set.call(this, mapped === void 0 ? value : mapped);
-						},
-						configurable: true,
-					});
-					return img;
-				}
-				PatchedImage.prototype = OrigImage.prototype;
-				window.Image = PatchedImage;
+				const origSet = desc.set;
+				desc.set = function (value) {
+					const mapped = mapUrl(String(value));
+					origSet.call(this, mapped === void 0 ? value : mapped);
+				};
+				Object.defineProperty(HTMLImageElement.prototype, "src", desc);
 			}
 		}
 		//#endregion
+		//#region src/client/key-map.ts
+		/** e.code -> key image name (the desktop app's resources naming). */
+		const CODE_TO_KEY = {
+			Space: "Space", Enter: "Return", NumpadEnter: "Return", Backspace: "Backspace", Tab: "Tab",
+			CapsLock: "CapsLock", Escape: "Escape", Delete: "Delete", Slash: "Slash", Backquote: "BackQuote",
+			ShiftLeft: "ShiftLeft", ShiftRight: "ShiftRight", ControlLeft: "ControlLeft", ControlRight: "ControlRight",
+			AltLeft: "Alt", AltRight: "AltGr", MetaLeft: "Meta", MetaRight: "Meta", ContextMenu: "Meta",
+			ArrowUp: "UpArrow", ArrowDown: "DownArrow", ArrowLeft: "LeftArrow", ArrowRight: "RightArrow",
+		};
+		/** Fallback names mirroring the desktop app's getSupportedKey. */
+		const KEY_FALLBACKS = { ShiftLeft: "Shift", ShiftRight: "Shift", ControlLeft: "Control", ControlRight: "Control" };
+		/** Resolve one KeyboardEvent.code to an available key image name (or null). */
+		function keyImageName(code) {
+			let name = null;
+			if (code.startsWith("Key") && code.length === 5) name = code;
+			else if (code.startsWith("Digit") && code.length === 6) name = "Num" + code.slice(5);
+			else if (/^F\d{1,2}$/.test(code)) name = "Fn";
+			else if (Object.prototype.hasOwnProperty.call(CODE_TO_KEY, code)) name = CODE_TO_KEY[code];
+			if (name !== null && MODEL_FILES["resources/left-keys/" + name + ".png"] !== void 0) return name;
+			if (name !== null && MODEL_FILES["resources/right-keys/" + name + ".png"] !== void 0) return name;
+			if (name !== null && Object.prototype.hasOwnProperty.call(KEY_FALLBACKS, code)) {
+				const fb = KEY_FALLBACKS[code];
+				if (MODEL_FILES["resources/left-keys/" + fb + ".png"] !== void 0) return fb;
+			}
+			return null;
+		}
+		//#endregion
 		//#region src/client/pet-css.ts
-		const css = `[data-dsh-bongo]{position:fixed;bottom:10px;z-index:60;pointer-events:none;font-family:var(--dsw-alias-font-family,system-ui,sans-serif);display:flex;flex-direction:column;align-items:center;gap:2px}[data-dsh-bongo][data-side=right]{right:24px}[data-dsh-bongo][data-side=left]{left:24px}[data-dsh-bongo] .bongo-caps{display:flex;gap:4px;min-height:24px;align-items:flex-end;justify-content:center;flex-wrap:wrap;max-width:340px}[data-dsh-bongo] .bongo-cap{background:var(--dsw-alias-bg-layer-1);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);border-radius:6px;padding:2px 7px;font-size:12px;line-height:18px;box-shadow:0 2px 8px rgba(0,0,0,.18);animation:bongo-cap 1.1s var(--ds-ease-in-out,ease) forwards;white-space:nowrap}[data-dsh-bongo] .bongo-cap.fresh{border-color:var(--dsw-alias-state-business-tertiary);color:var(--dsw-alias-state-business-primary)}@keyframes bongo-cap{0%{opacity:0;transform:translateY(6px) scale(.85)}12%{opacity:1;transform:translateY(0) scale(1)}70%{opacity:1}100%{opacity:0;transform:translateY(-4px)}}[data-dsh-bongo] .bongo-stage{position:relative;line-height:0}[data-dsh-bongo] canvas{display:block}`;
+		const css = `[data-dsh-bongo]{position:fixed;bottom:10px;z-index:60;pointer-events:none;font-family:var(--dsw-alias-font-family,system-ui,sans-serif);display:flex;flex-direction:column;align-items:center;gap:2px}[data-dsh-bongo][data-side=right]{right:24px}[data-dsh-bongo][data-side=left]{left:24px}[data-dsh-bongo] .bongo-caps{display:flex;gap:4px;min-height:24px;align-items:flex-end;justify-content:center;flex-wrap:wrap;max-width:340px}[data-dsh-bongo] .bongo-cap{background:var(--dsw-alias-bg-layer-1);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);border-radius:6px;padding:2px 7px;font-size:12px;line-height:18px;box-shadow:0 2px 8px rgba(0,0,0,.18);animation:bongo-cap 1.1s var(--ds-ease-in-out,ease) forwards;white-space:nowrap}[data-dsh-bongo] .bongo-cap.fresh{border-color:var(--dsw-alias-state-business-tertiary);color:var(--dsw-alias-state-business-primary)}@keyframes bongo-cap{0%{opacity:0;transform:translateY(6px) scale(.85)}12%{opacity:1;transform:translateY(0) scale(1)}70%{opacity:1}100%{opacity:0;transform:translateY(-4px)}}[data-dsh-bongo] .bongo-scene{position:relative;line-height:0}[data-dsh-bongo] .bongo-bg{position:absolute;inset:0;width:100%;height:100%;border-radius:10px}[data-dsh-bongo] canvas{position:relative;display:block;border-radius:10px}[data-dsh-bongo] .bongo-key{position:absolute;inset:0;width:100%;height:100%;border-radius:10px}`;
 		const tagId = "@deepseek-ai/dsh-client-ui-bongocat/pet.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -122,8 +124,11 @@ window.__ModuleLoader__.load({
 		const BONGO_SHOW_KEYS_KEY = "dsh.ui-bongocat.showKeys";
 		/** Pet settings with the shipped defaults. */
 		const BONGO_DEFAULTS = { side: "right", scale: 100, showKeys: true };
-		/** Display width of the model at scale 100%, px. */
-		const BASE_WIDTH = 260;
+		/** Scene base width at scale 100%, px (the resources' native canvas is 612x354). */
+		const BASE_WIDTH = 300;
+		const SCENE_ASPECT = 354 / 612;
+		/** Shared input state read by the per-frame parameter writer. */
+		const BONGO_INPUT = { key: false, mouseL: false, mouseR: false };
 		/** True when the stored string is the literal `true`/`1`. */
 		function readFlag(key, fallback) {
 			try {
@@ -141,10 +146,9 @@ window.__ModuleLoader__.load({
 			} catch { /* non-fatal */ }
 		}
 		/**
-		* The Live2D bongo-cat pet: a fixed, click-transparent stage with a
-		* keycap row and the real BongoCat keyboard model on a WebGL canvas.
-		* Page-scoped keyboard events drive the model's own paw parameters;
-		* every effect is owned and disposed with the layer.
+		* The classic-scene pet: desk background + the standard Live2D model + the
+		* pressed-key image overlay, driven by page input events. Every effect is
+		* owned and disposed with the layer.
 		*/
 		const BongoPet = class {
 			constructor() {
@@ -153,12 +157,14 @@ window.__ModuleLoader__.load({
 				this.readSettings();
 				this.stage = void 0;
 				this.capsRow = void 0;
+				this.scene = void 0;
+				this.keyLayer = void 0;
 				this.canvas = void 0;
 				this.app = void 0;
 				this.model = void 0;
 				this.mounting = false;
-				this.pawState = { left: false, right: false };
-				this.downKeys = /* @__PURE__ */ new Map();
+				this.pressedKeys = /* @__PURE__ */ new Map();
+				this.releaseTimers = /* @__PURE__ */ new Map();
 				this.disposers = [];
 			}
 			/** Read the persisted knobs, clamping every field. */
@@ -189,13 +195,13 @@ window.__ModuleLoader__.load({
 				writeKey(BONGO_SIDE_KEY, side);
 				this.applySettings();
 			}
-			/** Set the model scale (50-180). */
+			/** Set the scene scale (50-180). */
 			setScale(scale) {
 				this.settings.scale = Math.min(180, Math.max(50, Math.round(scale)));
 				writeKey(BONGO_SCALE_KEY, String(this.settings.scale));
 				this.applySettings();
 			}
-			/** Set whether keycap bubbles show the pressed key names. */
+			/** Set whether keycap bubbles show above the scene. */
 			setShowKeys(showKeys) {
 				this.settings.showKeys = showKeys;
 				writeKey(BONGO_SHOW_KEYS_KEY, String(showKeys));
@@ -212,55 +218,84 @@ window.__ModuleLoader__.load({
 					stage.setAttribute("aria-hidden", "true");
 					const caps = document.createElement("div");
 					caps.className = "bongo-caps";
-					const holder = document.createElement("div");
-					holder.className = "bongo-stage";
+					const scene = document.createElement("div");
+					scene.className = "bongo-scene";
+					const bg = document.createElement("img");
+					bg.className = "bongo-bg";
+					bg.alt = "";
+					bg.src = MODEL_FILES["resources/background.png"];
 					const canvas = document.createElement("canvas");
-					holder.appendChild(canvas);
+					const keyLayer = document.createElement("div");
+					keyLayer.className = "bongo-key-layer";
+					scene.appendChild(bg);
+					scene.appendChild(canvas);
+					scene.appendChild(keyLayer);
 					stage.appendChild(caps);
-					stage.appendChild(holder);
+					stage.appendChild(scene);
 					document.body.appendChild(stage);
 					this.stage = stage;
 					this.capsRow = caps;
+					this.scene = scene;
+					this.keyLayer = keyLayer;
 					this.canvas = canvas;
 					this.applySettings();
 					this.attach();
-					if (!ensureRuntimeLibs()) throw new Error("ui-bongocat: runtime libs failed to expose globals");
-					const PIXI = window.PIXI;
-					const app = new PIXI.Application({ view: canvas, backgroundAlpha: 0, autoDensity: true, resolution: window.devicePixelRatio || 1, width: 320, height: 240 });
+					const l2d = window.PIXI?.live2d;
+					if (window.Live2DCubismCore === void 0 || l2d?.Live2DModel === void 0) {
+						throw new Error("ui-bongocat: Live2D runtime globals missing (core=" + typeof window.Live2DCubismCore + ", l2d=" + typeof l2d + ")");
+					}
+					const app = new window.PIXI.Application({ view: canvas, backgroundAlpha: 0, autoDensity: true, resolution: window.devicePixelRatio || 1, width: 320, height: 200 });
 					this.app = app;
 					const settingsJson = JSON.parse(await (await fetch(MODEL_FILES["cat.model3.json"])).text());
-					const model = await PIXI.live2d.Live2DModel.from({ ...settingsJson, url: VIRTUAL_BASE + "cat.model3.json" }, { autoInteract: false });
+					const model = await l2d.Live2DModel.from({ ...settingsJson, url: VIRTUAL_BASE + "cat.model3.json" }, { autoInteract: false });
 					this.model = model;
 					app.stage.addChild(model);
-					this.drivePaws();
+					this.wrapParams();
 					this.applySettings();
 				} catch (error) {
-					console.error("ui-bongocat: Live2D mount failed", error);
-					this.stage?.remove();
-					this.stage = void 0;
+					console.error("ui-bongocat: Live2D mount failed:", error);
+					this.teardownDom();
 				} finally {
 					this.mounting = false;
 				}
 			}
-			/** Wrap the internal update so paw parameters ride every frame. */
-			drivePaws() {
+			/** Write the input state into the model's parameters every frame. */
+			wrapParams() {
 				const im = this.model?.internalModel;
 				if (im === void 0) return;
 				const core = im.coreModel;
-				const origUpdate = im.update.bind(im);
-				const left = "CatParamLeftHandDown";
-				const right = "CatParamRightHandDown";
-				im.update = function (dt, ...rest) {
+				const write = (id, value) => {
 					try {
-						core.setParameterValueById(left, BONGO_PAW_STATE.left ? 1 : 0);
-						core.setParameterValueById(right, BONGO_PAW_STATE.right ? 1 : 0);
-					} catch { /* parameter missing on this model */ }
-					return origUpdate(dt, ...rest);
+						if (typeof core?.setParameterValueById === "function") core.setParameterValueById(id, value);
+						else if (typeof im.setParameterValueById === "function") im.setParameterValueById(id, value);
+					} catch { /* parameter absent on this model */ }
 				};
+				const origUpdate = im.update.bind(im);
+				im.update = function (dt) {
+					write("CatParamLeftHandDown", BONGO_INPUT.key ? 1 : 0);
+					write("ParamMouseLeftDown", BONGO_INPUT.mouseL ? 1 : 0);
+					write("ParamMouseRightDown", BONGO_INPUT.mouseR ? 1 : 0);
+					return origUpdate(dt);
+				};
+			}
+			/** Remove the stage DOM only (shared by unmount and mount failure). */
+			teardownDom() {
+				for (const dispose of this.disposers.splice(0)) dispose();
+				for (const timer of this.releaseTimers.values()) clearTimeout(timer);
+				this.releaseTimers.clear();
+				this.pressedKeys.clear();
+				this.stage?.remove();
+				this.stage = void 0;
+				this.capsRow = void 0;
+				this.scene = void 0;
+				this.keyLayer = void 0;
+				this.canvas = void 0;
+				BONGO_INPUT.key = false;
+				BONGO_INPUT.mouseL = false;
+				BONGO_INPUT.mouseR = false;
 			}
 			/** Remove the stage, model, and every listener. */
 			unmount() {
-				for (const dispose of this.disposers.splice(0)) dispose();
 				try {
 					this.model?.destroy();
 				} catch { /* already destroyed */ }
@@ -269,58 +304,64 @@ window.__ModuleLoader__.load({
 					this.app?.destroy(true);
 				} catch { /* already destroyed */ }
 				this.app = void 0;
-				this.stage?.remove();
-				this.stage = void 0;
-				this.capsRow = void 0;
-				this.canvas = void 0;
-				this.downKeys.clear();
+				this.teardownDom();
 			}
-			/** Write the side/scale knobs onto the stage and the model. */
+			/** Write the side/scale knobs onto the stage and fit the model. */
 			applySettings() {
-				if (this.stage !== void 0) this.stage.dataset.side = this.settings.side;
+				if (this.stage === void 0) return;
+				this.stage.dataset.side = this.settings.side;
+				const w = Math.round(BASE_WIDTH * (this.settings.scale / 100));
+				const h = Math.round(w * SCENE_ASPECT);
+				if (this.scene !== void 0) {
+					this.scene.style.width = w + "px";
+					this.scene.style.height = h + "px";
+				}
+				if (this.app !== void 0 && this.canvas !== void 0) {
+					this.app.renderer.resize(w, h);
+					this.canvas.style.width = w + "px";
+					this.canvas.style.height = h + "px";
+				}
 				const model = this.model;
 				if (model === void 0) return;
 				const im = model.internalModel;
 				if (im === void 0) return;
-				const natural = im.originalWidth && im.originalHeight ? im.originalHeight / im.originalWidth : 0.75;
-				const targetW = Math.round(BASE_WIDTH * (this.settings.scale / 100));
-				const targetH = Math.round(targetW * natural);
-				if (this.app !== void 0 && this.canvas !== void 0) {
-					this.app.renderer.resize(targetW, targetH);
-					this.canvas.style.width = `${targetW}px`;
-					this.canvas.style.height = `${targetH}px`;
-				}
-				model.scale.set(targetW / im.originalWidth);
-				model.x = 0;
-				model.y = targetH;
-				model.anchor?.set(0, 1);
+				const mw = im.originalWidth || 1;
+				const mh = im.originalHeight || 1;
+				const fit = Math.min(w / mw, h / mh);
+				model.scale.set(fit);
+				model.anchor?.set(0.5, 0.5);
+				model.x = w / 2;
+				model.y = h / 2;
 			}
-			/** Page-scoped input listeners feeding the paw state. */
+			/** Page-scoped input listeners feeding the paw/key state. */
 			attach() {
 				if (this.stage === void 0) return;
 				const onKeyDown = (e) => {
 					if (e.repeat) return;
-					this.downKeys.set(e.code, this.sideFor(e));
-					this.recompute();
+					const name = keyImageName(e.code);
+					if (name === null) return;
+					this.pressKey(e.code, name);
 					this.pushCap(this.labelFor(e));
 				};
 				const onKeyUp = (e) => {
-					this.downKeys.delete(e.code);
-					this.recompute();
+					this.releaseKey(e.code);
 				};
 				const onMouseDown = (e) => {
-					if (e.button === 0) {
-						this.downKeys.set("__mouse", "both");
-						this.recompute();
-					}
+					if (e.button === 0) BONGO_INPUT.mouseL = true;
+					else if (e.button === 2) BONGO_INPUT.mouseR = true;
+					else return;
+					if (e.button === 0) this.pushCap("L-Click");
+					else this.pushCap("R-Click");
 				};
 				const onMouseUp = () => {
-					this.downKeys.delete("__mouse");
-					this.recompute();
+					BONGO_INPUT.mouseL = false;
+					BONGO_INPUT.mouseR = false;
 				};
 				const onBlur = () => {
-					this.downKeys.clear();
-					this.recompute();
+					BONGO_INPUT.key = false;
+					BONGO_INPUT.mouseL = false;
+					BONGO_INPUT.mouseR = false;
+					for (const code of [...this.pressedKeys.keys()]) this.releaseKey(code);
 				};
 				window.addEventListener("keydown", onKeyDown, { capture: true });
 				window.addEventListener("keyup", onKeyUp, { capture: true });
@@ -335,39 +376,42 @@ window.__ModuleLoader__.load({
 					window.removeEventListener("blur", onBlur);
 				});
 			}
-			/** Map one keyboard event to the paw side that slaps it. */
-			sideFor(e) {
-				const code = e.code;
-				if (code === "Space") return "both";
-				if (code.startsWith("Key")) {
-					const letter = code.slice(3);
-					return "QWERTASDFGZXCVB".includes(letter) ? "left" : "right";
+			/** Light one key image up and slap the left paw. */
+			pressKey(code, name) {
+				if (this.pressedKeys.has(code)) return;
+				let url = MODEL_FILES["resources/left-keys/" + name + ".png"];
+				if (url === void 0) url = MODEL_FILES["resources/right-keys/" + name + ".png"];
+				if (url === void 0) return;
+				let img;
+				if (this.keyLayer !== void 0) {
+					img = document.createElement("img");
+					img.className = "bongo-key";
+					img.alt = "";
+					img.src = url;
+					this.keyLayer.appendChild(img);
 				}
-				if (code.startsWith("Digit")) return Number(code.slice(5)) <= 5 ? "left" : "right";
-				if (/^(Backquote|Tab|CapsLock|ShiftLeft|ControlLeft|AltLeft|MetaLeft|Escape|F[1-6]$)/.test(code)) return "left";
-				if (/^(Backspace|Enter|ShiftRight|ControlRight|AltRight|MetaRight|Arrow|Delete|End|PageDown|PageUp|Home|Numpad|F([7-9]|1[0-2])$)/.test(code)) return "right";
-				return "left";
+				this.pressedKeys.set(code, img);
+				BONGO_INPUT.key = true;
+				const prev = this.releaseTimers.get(code);
+				if (prev !== void 0) clearTimeout(prev);
+				this.releaseTimers.set(code, setTimeout(() => this.releaseKey(code), 350));
 			}
-			/** Re-derive both paw states from the held-key map. */
-			recompute() {
-				let left = false;
-				let right = false;
-				for (const side of this.downKeys.values()) {
-					if (side === "left") left = true;
-					else if (side === "right") right = true;
-					else {
-						left = true;
-						right = true;
-					}
+			/** Release one key image and drop the paw when none remain. */
+			releaseKey(code) {
+				const timer = this.releaseTimers.get(code);
+				if (timer !== void 0) {
+					clearTimeout(timer);
+					this.releaseTimers.delete(code);
 				}
-				this.pawState.left = left;
-				this.pawState.right = right;
-				BONGO_PAW_STATE.left = left;
-				BONGO_PAW_STATE.right = right;
+				const img = this.pressedKeys.get(code);
+				if (img !== void 0) img.remove();
+				this.pressedKeys.delete(code);
+				if (this.pressedKeys.size === 0) BONGO_INPUT.key = false;
 			}
 			/** Append one keycap bubble; capped so bursts cannot flood the row. */
 			pushCap(label) {
 				if (this.capsRow === void 0) return;
+				if (!this.settings.showKeys) return;
 				if (label === "") return;
 				while (this.capsRow.childElementCount >= 7) this.capsRow.firstElementChild?.remove();
 				const cap = document.createElement("span");
@@ -382,18 +426,16 @@ window.__ModuleLoader__.load({
 			}
 			/** Format one keyboard event into a short bubble label. */
 			labelFor(e) {
-				if (!this.settings.showKeys) return "";
 				if (this.isSensitive(e)) return "\u2022\u2022\u2022";
 				const parts = [];
 				if (e.ctrlKey && e.key !== "Control") parts.push("Ctrl");
 				if (e.altKey && e.key !== "Alt") parts.push("Alt");
 				if (e.shiftKey && e.key !== "Shift" && e.key.length > 1) parts.push("Shift");
-				if (e.metaKey && e.key !== "Meta") parts.push("Win");
 				let key = e.key;
 				if (key === " ") key = "Space";
 				else if (key === "Escape") key = "Esc";
 				else if (key === "Backspace") key = "Bksp";
-				else if (key === "Delete") key = "Del";
+				else if (key === "Enter") key = "Enter";
 				else if (key === "ArrowUp") key = "\u2191";
 				else if (key === "ArrowDown") key = "\u2193";
 				else if (key === "ArrowLeft") key = "\u2190";
@@ -416,16 +458,12 @@ window.__ModuleLoader__.load({
 				return false;
 			}
 		};
-		/** Shared paw state read by the per-frame parameter writer. */
-		const BONGO_PAW_STATE = { left: false, right: false };
-		/** The single live pet instance (owned by apply, read nowhere else). */
-		let bongoPetInstance = void 0;
 		//#endregion
 		//#region src/client/locales.ts
 		const NS = "settings.bongo";
 		const zh = {
-			"bongo.title": "猫爪桌宠",
-			"bongo.description": "原版 BongoCat Live2D 模型趴在键盘上，打字时左右爪跟着拍击（密码框自动打码）",
+			"bongo.title": "BongoCat 桌宠",
+			"bongo.description": "原版经典场景：小白猫趴在桌前，打字时左爪拍键盘、按键图案实时亮起，点鼠标按鼠标（密码框自动打码）",
 			"bongo.enable": "开启",
 			"bongo.disable": "关闭",
 			"bongo.side": "位置",
@@ -433,11 +471,11 @@ window.__ModuleLoader__.load({
 			"bongo.sideRight": "右下角",
 			"bongo.scale": "大小",
 			"bongo.showKeys": "显示按键气泡",
-			"bongo.showKeysHint": "关闭后只有拍击动画；密码/密钥输入框始终显示 •••"
+			"bongo.showKeysHint": "键盘上的按键亮起始终保留；气泡只是上方的文字提示；密码/密钥输入框始终显示 •••"
 		};
 		const en = {
-			"bongo.title": "Bongo Paw",
-			"bongo.description": "The original BongoCat Live2D model lying on its keyboard — paws slap along with your typing (password fields masked)",
+			"bongo.title": "BongoCat Pet",
+			"bongo.description": "The original classic scene: the white cat at its desk — typing slaps the keyboard with key images lighting up, clicking presses the mouse (password fields masked)",
 			"bongo.enable": "On",
 			"bongo.disable": "Off",
 			"bongo.side": "Position",
@@ -445,7 +483,7 @@ window.__ModuleLoader__.load({
 			"bongo.sideRight": "Bottom right",
 			"bongo.scale": "Size",
 			"bongo.showKeys": "Keycap bubbles",
-			"bongo.showKeysHint": "Off keeps only the slapping; password/secret fields always show \u2022\u2022\u2022"
+			"bongo.showKeysHint": "Key images on the keyboard always stay; bubbles are just the text hint above; password/secret fields always show \u2022\u2022\u2022"
 		};
 		//#endregion
 		//#region src/client/stores.ts
@@ -595,8 +633,7 @@ window.__ModuleLoader__.load({
 				zh,
 				en
 			}), "ui-bongocat: settings dictionary");
-			bongoPetInstance = new BongoPet();
-			const pet = bongoPetInstance;
+			const pet = new BongoPet();
 			const cardStore = createBongoCardStore();
 			const settingsStore = createBongoSettingsStore();
 			let cardBound;

@@ -12,14 +12,29 @@
       "Name": "角度 Y"
     },
     {
-      "Id": "CatParamRightHandDown",
+      "Id": "ParamMouseX",
       "GroupId": "",
-      "Name": "右手按下"
+      "Name": "鼠标X"
+    },
+    {
+      "Id": "ParamMouseY",
+      "GroupId": "",
+      "Name": "鼠标Y"
+    },
+    {
+      "Id": "ParamMouseLeftDown",
+      "GroupId": "",
+      "Name": "鼠标左键按下"
+    },
+    {
+      "Id": "ParamMouseRightDown",
+      "GroupId": "",
+      "Name": "鼠标右键按下"
     },
     {
       "Id": "CatParamLeftHandDown",
       "GroupId": "",
-      "Name": "左手按下"
+      "Name": "键盘按下"
     },
     {
       "Id": "ParamAngleZ",
@@ -212,10 +227,6 @@
     {
       "Id": "Part5",
       "Name": "demomodel.psd(未找到对应图层)"
-    },
-    {
-      "Id": "PartSketch0",
-      "Name": "[ 参考图 ]"
     },
     {
       "Id": "Part8",
