@@ -106,7 +106,7 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region src/client/pet-css.ts
-		const css = `[data-dsh-bongo]{position:fixed;bottom:10px;z-index:60;pointer-events:none;font-family:var(--dsw-alias-font-family,system-ui,sans-serif);display:flex;flex-direction:column;align-items:center}[data-dsh-bongo][data-side=right]{right:24px}[data-dsh-bongo][data-side=left]{left:24px}[data-dsh-bongo] .bongo-caps{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);display:flex;gap:4px;align-items:flex-end;justify-content:center;flex-wrap:wrap;max-width:340px}[data-dsh-bongo] .bongo-cap{background:var(--dsw-alias-bg-layer-1);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);border-radius:6px;padding:2px 7px;font-size:12px;line-height:18px;box-shadow:0 2px 8px rgba(0,0,0,.18);animation:bongo-cap 1.1s var(--ds-ease-in-out,ease) forwards;white-space:nowrap}[data-dsh-bongo] .bongo-cap.fresh{border-color:var(--dsw-alias-state-business-tertiary);color:var(--dsw-alias-state-business-primary)}@keyframes bongo-cap{0%{opacity:0;transform:translateY(6px) scale(.85)}12%{opacity:1;transform:translateY(0) scale(1)}70%{opacity:1}100%{opacity:0;transform:translateY(-4px)}}[data-dsh-bongo] .bongo-scene{position:relative;line-height:0}[data-dsh-bongo] .bongo-bg{position:absolute;inset:0;width:100%;height:100%;border-radius:10px}[data-dsh-bongo] canvas{position:relative;display:block;border-radius:10px}[data-dsh-bongo] .bongo-key{position:absolute;inset:0;width:100%;height:100%;border-radius:10px}`;
+		const css = `[data-dsh-bongo]{position:fixed;bottom:10px;z-index:60;pointer-events:none;font-family:var(--dsw-alias-font-family,system-ui,sans-serif);display:flex;flex-direction:column;align-items:center}[data-dsh-bongo][data-side=right]{right:24px}[data-dsh-bongo][data-side=left]{left:24px}[data-dsh-bongo] .bongo-caps{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);display:flex;gap:4px;align-items:flex-end;justify-content:center;flex-wrap:wrap;max-width:340px}[data-dsh-bongo] .bongo-cap{background:var(--dsw-alias-bg-layer-1);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);border-radius:6px;padding:2px 7px;font-size:12px;line-height:18px;box-shadow:0 2px 8px rgba(0,0,0,.18);animation:bongo-cap 1.1s var(--ds-ease-in-out,ease) forwards;white-space:nowrap}[data-dsh-bongo] .bongo-cap.fresh{border-color:var(--dsw-alias-state-business-tertiary);color:var(--dsw-alias-state-business-primary)}@keyframes bongo-cap{0%{opacity:0;transform:translateY(6px) scale(.85)}12%{opacity:1;transform:translateY(0) scale(1)}70%{opacity:1}100%{opacity:0;transform:translateY(-4px)}}[data-dsh-bongo] .bongo-scene{position:relative;line-height:0}[data-dsh-bongo] .bongo-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:10px}[data-dsh-bongo] .bongo-scene canvas{position:absolute;inset:0;width:100%;height:100%;display:block;border-radius:10px}[data-dsh-bongo] .bongo-key-layer{position:absolute;inset:0;pointer-events:none}[data-dsh-bongo] .bongo-key{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:10px}`;
 		const tagId = "@deepseek-ai/dsh-client-ui-bongocat/pet.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -317,24 +317,25 @@ window.__ModuleLoader__.load({
 				if (this.stage === void 0) return;
 				this.stage.dataset.side = this.settings.side;
 				const w = Math.round(BASE_WIDTH * (this.settings.scale / 100));
-				const h = Math.round(w * SCENE_ASPECT);
+				// The scene aspect follows the MODEL's native ratio (the desktop app
+				// sizes its window the same way); the bg and key images then cover-
+				// crop identically, so lit keys land exactly on the drawn keyboard.
+				const im0 = this.model?.internalModel;
+				const aspect = im0 !== void 0 && im0.originalWidth && im0.originalHeight
+					? im0.originalHeight / im0.originalWidth
+					: SCENE_ASPECT;
+				const h = Math.max(1, Math.round(w * aspect));
 				if (this.scene !== void 0) {
 					this.scene.style.width = w + "px";
 					this.scene.style.height = h + "px";
 				}
-				if (this.app !== void 0 && this.canvas !== void 0) {
-					this.app.renderer.resize(w, h);
-					this.canvas.style.width = w + "px";
-					this.canvas.style.height = h + "px";
-				}
+				if (this.app !== void 0) this.app.renderer.resize(w, h);
 				const model = this.model;
 				if (model === void 0) return;
 				const im = model.internalModel;
 				if (im === void 0) return;
 				const mw = im.originalWidth || 1;
-				const mh = im.originalHeight || 1;
-				const fit = Math.min(w / mw, h / mh);
-				model.scale.set(fit);
+				model.scale.set(w / mw);
 				model.anchor?.set(0.5, 0.5);
 				model.x = w / 2;
 				model.y = h / 2;
