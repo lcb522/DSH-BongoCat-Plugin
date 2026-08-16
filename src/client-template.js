@@ -92,8 +92,10 @@ window.__ModuleLoader__.load({
 		/** Resolve one KeyboardEvent.code to an available key image name (or null). */
 		function keyImageName(code) {
 			let name = null;
-			if (code.startsWith("Key") && code.length === 5) name = code;
-			else if (code.startsWith("Digit") && code.length === 6) name = "Num" + code.slice(5);
+			// e.code for letters is "KeyA".."KeyZ" — length 4, not 5!
+			if (/^Key[A-Z]$/.test(code)) name = code;
+			else if (/^Digit\d$/.test(code)) name = "Num" + code.slice(5);
+			else if (/^Numpad\d$/.test(code)) name = "Num" + code.slice(6);
 			else if (/^F\d{1,2}$/.test(code)) name = "Fn";
 			else if (Object.prototype.hasOwnProperty.call(CODE_TO_KEY, code)) name = CODE_TO_KEY[code];
 			if (name !== null && MODEL_FILES["resources/left-keys/" + name + ".png"] !== void 0) return name;
