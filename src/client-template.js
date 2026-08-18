@@ -708,8 +708,7 @@ window.__ModuleLoader__.load({
 			};
 			ctx.slots.inject("settings.plugin.item", () => ctx.slots.register({
 				name: "settings.plugin.item",
-				id: "bongocat",
-				order: 6,
+				key: "bongocat",
 				store: cardStore,
 				locale: NS,
 				inject: cardInjected
