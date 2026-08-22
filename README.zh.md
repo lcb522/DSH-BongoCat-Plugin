@@ -4,6 +4,11 @@
 
 **猫爪桌宠（Live2D 版）**：把 [BongoCat 桌面版](https://github.com/ayangweb/BongoCat)（MIT）的**原版 Live2D 键盘模型**搬进 DeepSeek Harness 网页——同一只猫、同一块键盘，打字时左右爪跟着拍，眼睛自动眨、身体自动呼吸。
 
+## 架构
+
+[![架构图](docs/architecture.png)](docs/architecture.html)
+
+可交互架构地图——点击图片打开完整 HTML（深浅主题、节点搜索、引导视图：渲染管线 / 输入驱动 / 设置回路）。基于插件真实数据流，使用 [Archify](https://github.com/tt-a1i/archify) 生成。
 ## 特性
 
 - **原版 Live2D 模型**：内嵌 BongoCat v1.1.0 的 keyboard 模型（moc3 + 官方贴图），Cubism Core + pixi.js + pixi-live2d-display 渲染，全部自包含、零外网请求

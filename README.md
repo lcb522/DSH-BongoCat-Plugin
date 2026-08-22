@@ -4,6 +4,13 @@ English | [中文](README.zh.md)
 
 **Bongo Paw (Live2D edition)**: the **original BongoCat Live2D keyboard model** ([desktop BongoCat](https://github.com/ayangweb/BongoCat), MIT) brought into the DeepSeek Harness web surface — the same cat on the same keyboard, paws slapping along with your typing, with automatic blinking and breathing.
 
+## Architecture
+
+[![Architecture](docs/architecture.png)](docs/architecture.html)
+
+Interactive architecture map — click the image to open the full explorable HTML
+(dark/light themes, node search, guided views: 渲染管线 / 输入驱动 / 设置回路).
+Generated with [Archify](https://github.com/tt-a1i/archify) from the real plugin dataflow.
 ## Features
 
 - **The real Live2D model**: embeds the keyboard model from BongoCat v1.1.0 (moc3 + official textures), rendered by Cubism Core + pixi.js + pixi-live2d-display — fully self-contained, zero network requests
